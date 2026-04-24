@@ -1,62 +1,79 @@
-# mcp-server-generic-jdbc
+# MCP Server: Generic JDBC
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server implementation providing read-only database access to AI agents via JDBC. 
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+This server allows LLMs to interact with various databases (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle) to discover schemas and retrieve data.
 
-## Running the application in dev mode
+## Features
 
-You can run your application in dev mode that enables live coding using:
+- **`list_tables`**: Discover available tables in the database.
+- **`describe_table`**: Inspect column names and data types for a specific table.
+- **`execute_sql`**: Execute read-only `SELECT` queries to answer complex data-related questions.
+- **Security**: Built-in SQL validation to prevent destructive operations (e.g., `DROP`, `DELETE`, `UPDATE`).
 
-```shell script
+## Prerequisites
+
+- Java 21+
+- A JDBC-compatible database
+- (Optional) Docker and Docker Compose
+
+## Configuration
+
+The application is configured via environment variables:
+
+| Variable | Description |
+| :--- | :--- |
+| `DB_KIND` | Database type (e.g., `postgresql`, `mysql`, `mssql`, `mariadb`, `oracle`) |
+| `DB_URL` | JDBC Connection URL (e.g., `jdbc:postgresql://localhost:5432/db`) |
+| `DB_USER` | Database username |
+| `DB_PASS` | Database password |
+
+### MCP Tool Customization (Optional)
+
+You can customize how the tools appear to the AI agent by setting these variables. **It is highly recommended to make these descriptions as exact as possible**, specifically describing the purpose and content of your database (e.g., "Access the CRM database containing customer contacts and sales history") to help the agent understand the available data.
+
+| Variable | Default Description |
+| :--- | :--- |
+| `MCP_TOOL_LIST_TABLES_DESCRIPTION` | List all available database tables... |
+| `MCP_TOOL_DESCRIBE_TABLE_DESCRIPTION` | Get the schema/DDL for a specific database table... |
+| `MCP_TOOL_EXECUTE_SQL_DESCRIPTION` | Run a read-only SQL SELECT query... |
+
+## Getting Started
+
+### 1. Development Mode
+
+Run the application in development mode with live coding enabled:
+
+```bash
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+### 2. Running with Docker Compose
 
-## Packaging and running the application
+The easiest way to run the server is using the configuration in the `deployment/` folder:
 
-The application can be packaged using:
+```bash
+cd deployment
+# Copy the example env file and edit it
+cp .env.example .env
+# Start the server
+docker compose up -d
+```
 
-```shell script
+### 3. Packaging & Running
+
+Package the application as a runnable JAR:
+
+```bash
 ./mvnw package
+java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+## Documentation
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+- [AGENTS.md](./AGENTS.md): Detailed information for AI agents on how to use the provided tools.
+- [DEPLOYMENT.md](./DEPLOYMENT.md): Comprehensive guide for different deployment scenarios.
 
-If you want to build an _über-jar_, execute the following command:
+## License
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
-
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/mcp-server-generic-jdbc-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+See the project's license for more details.

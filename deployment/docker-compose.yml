@@ -1,0 +1,22 @@
+services:
+  mcp-server:
+    image: ghcr.io/harald-landvoigt/mcp-server-generic-jdbc:latest
+    container_name: mcp-server-jdbc
+    ports:
+      - "8080:8080"
+    environment:
+      # Mandatory Database Configuration
+      - DB_KIND=${DB_KIND}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_URL=${DB_URL}
+
+      # Optional MCP Tool Customization
+      # IMPORTANT: Describe the purpose and content of your database as precisely as possible 
+      # to help the AI agent understand how to use the tools effectively.
+      
+      - MCP_TOOL_LIST_TABLES_DESCRIPTION=${MCP_TOOL_LIST_TABLES_DESCRIPTION:-List all available tables in the database (e.g., customer records, order history, and product inventory).}
+      
+      - MCP_TOOL_DESCRIBE_TABLE_DESCRIPTION=${MCP_TOOL_DESCRIBE_TABLE_DESCRIPTION:-Get the schema for a specific table to understand columns and data types before querying.}
+      
+      - MCP_TOOL_EXECUTE_SQL_DESCRIPTION=${MCP_TOOL_EXECUTE_SQL_DESCRIPTION:-Run read-only SQL SELECT queries to analyze data, such as calculating revenue or finding top customers.}

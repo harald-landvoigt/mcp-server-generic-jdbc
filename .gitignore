@@ -1,0 +1,68 @@
+
+IMPROVMENTS.md
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+build.log
+.flattened-pom.xml
+.mvn/wrapper/maven-wrapper.jar
+
+# Compiled class file
+*.class
+
+# Log files
+*.log
+
+# Package Files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Quarkus
+.quarkus/
+bin/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.metadata
+.classpath
+.project
+.settings/
+.factorypath
+
+# Visual Studio Code
+.vscode/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Operating Systems
+.DS_Store
+Thumbs.db
+
+# Virtual Environments & Packages (if any Python scripts/tools are added)
+venv/
+node_modules/
+
+# Secrets and Certificates
+.certs/
+*.pem
+*.key
+*.p12
