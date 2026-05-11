@@ -1,7 +1,6 @@
 package at.landvoigt.mcp.jdbc;
 
-import io.quarkiverse.mcp.server.Tool;
-import io.quarkiverse.mcp.server.ToolArg;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
@@ -9,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@ApplicationScoped
 public class JdbcMcpResource {
 
     private static final Logger LOG = Logger.getLogger(JdbcMcpResource.class);
@@ -19,11 +19,8 @@ public class JdbcMcpResource {
     @Inject
     SqlValidator sqlValidator;
 
-    @Tool(
-            name = "${mcp.tool.list_tables.name}",
-            description = "${mcp.tool.list_tables.description}")
     public McpResponse<Set<String>> getSchemas() {
-        LOG.info("MCP Tool: list_tables");
+        LOG.infof("MCP Tool: getSchemas");
         try {
             return McpResponse.ok(repository.getSchema().keySet());
         } catch (final Exception e) {
@@ -32,11 +29,8 @@ public class JdbcMcpResource {
         }
     }
 
-    @Tool(
-            name = "${mcp.tool.describe_table.name}",
-            description = "${mcp.tool.describe_table.description}")
-    public McpResponse<List<String>> getSchema(@ToolArg(description = "${mcp.tool.describe_table.arg.tableName.description}") final String tableName) {
-        LOG.infof("MCP Tool: describe_table [table=%s]", tableName);
+    public McpResponse<List<String>> getSchema(final String tableName) {
+        LOG.infof("MCP Tool: getSchema [table=%s]",  tableName);
         try {
             return McpResponse.ok(repository.getSchema(tableName));
         } catch (final Exception e) {
@@ -45,13 +39,8 @@ public class JdbcMcpResource {
         }
     }
 
-    @Tool(
-            name = "${mcp.tool.execute_sql.name}",
-            description = "${mcp.tool.execute_sql.description}")
-    public McpResponse<List<Map<String, Object>>> executeSql(
-            @ToolArg(description = "${mcp.tool.execute_sql.arg.query.description}") final String query
-    ) {
-        LOG.infof("AUDIT: MCP Tool: execute_sql [query=%s]", query);
+    public McpResponse<List<Map<String, Object>>> executeSql(final String query) {
+        LOG.infof("AUDIT: MCP Tool: executeSql [query=%s]", query);
         if (!sqlValidator.isValidSelect(query)) {
             LOG.warnf("SECURITY: Blocked invalid execute_sql query: %s", query);
             return McpResponse.error("Invalid query. Only SELECT statements are allowed for security reasons.");
