@@ -24,6 +24,34 @@ Allows AI agents to explore database schemas and execute read-only SQL queries t
 - **Security**: This tool is restricted to read-only statements. It uses a basic `SqlValidator` to block destructive commands (`INSERT`, `UPDATE`, `DELETE`, `DROP`, etc.).
 - **Usage**: Use this to retrieve data to answer specific questions.
 
+## Response Format
+
+All three tools return a JSON envelope:
+
+```json
+{
+  "ok": true,
+  "data": <tool-specific payload>,
+  "meta": { "timestamp": "2025-05-11T10:00:00Z" }
+}
+```
+
+On failure, `ok` is `false`, `data` is absent, and an `error` object is present:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "message": "Error description",
+    "type": "java.lang.Exception",
+    "details": { "cause": null, "exception": "java.lang.Exception" }
+  },
+  "meta": { "timestamp": "2025-05-11T10:00:00Z" }
+}
+```
+
+Always check `ok` before reading `data`.
+
 ## Configuration
 
 The server requires the following environment variables:

@@ -4,12 +4,24 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server implem
 
 This server allows LLMs to interact with various databases (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle) to discover schemas and retrieve data.
 
-## Features
+## Available Tools
 
-- **`list_tables`**: Discover available tables in the database.
-- **`describe_table`**: Inspect column names and data types for a specific table.
-- **`execute_sql`**: Execute read-only `SELECT` queries to answer complex data-related questions.
-- **Security**: Built-in SQL validation to prevent destructive operations (e.g., `DROP`, `DELETE`, `UPDATE`).
+The server exposes three MCP tools:
+
+### `list_tables`
+- **Arguments**: none
+- **Returns**: Array of table name strings
+- **Use**: First call — discover what entities exist in the database.
+
+### `describe_table`
+- **Argument**: `tableName` (string, required) — exact table name as returned by `list_tables`
+- **Returns**: Array of strings in the format `COLUMN_NAME:TYPE_NAME:DATA_TYPE`
+- **Use**: Understand column names and types before writing a query.
+
+### `execute_sql`
+- **Argument**: `query` (string, required) — a SQL `SELECT` or `WITH` statement
+- **Returns**: Array of row objects (each row is a map of column name → value)
+- **Security**: Only `SELECT` and `WITH` are accepted. `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE` and mid-query semicolons are blocked.
 
 ## Prerequisites
 
@@ -68,6 +80,39 @@ Package the application as a runnable JAR:
 ./mvnw package
 java -jar target/quarkus-app/quarkus-run.jar
 ```
+
+## Connecting to the MCP Server
+
+Once the server is running (default port `8080`), two transport endpoints are available:
+
+| Endpoint | Transport | MCP Spec |
+| :--- | :--- | :--- |
+| `http://localhost:8080/mcp` | Streamable HTTP | 2025-03-26 (current) |
+| `http://localhost:8080/mcp/sse` | SSE | 2024-11-05 (legacy) |
+
+Adjust `localhost:8080` to match the host and port where the server is deployed.
+
+### Claude Desktop
+
+Add the following to your Claude Desktop configuration file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "jdbc": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
+```
+
+### Other MCP clients
+
+Use the streamable HTTP endpoint `/mcp` for clients that support the current MCP spec (Claude Desktop, Cursor, VS Code + Continue, etc.). Fall back to `/mcp/sse` for clients that only support the legacy SSE transport.
+
+---
 
 ## Documentation
 
