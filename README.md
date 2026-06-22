@@ -1,48 +1,49 @@
 # MCP Server: Generic JDBC
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server implementation providing read-only database access to AI agents via JDBC. 
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server implementation providing read-only database access to AI agents via JDBC. This server is built using **Java 21** and the **Quarkus** framework.
 
-This server allows LLMs to interact with various databases (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle) to discover schemas and retrieve data.
+This server allows LLMs to interact with various databases (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle) to discover schemas and retrieve data to answer user questions.
 
-## Available Tools
+> [!NOTE]
+> The server performs basic regex-based validation to ensure only read-only `SELECT` or `WITH` queries are executed.
 
-The server exposes three MCP tools:
+---
 
-### `list_tables`
-- **Arguments**: none
-- **Returns**: Array of table name strings
-- **Use**: First call — discover what entities exist in the database.
+## 🛠️ Available Tools
 
-### `describe_table`
-- **Argument**: `tableName` (string, required) — exact table name as returned by `list_tables`
-- **Returns**: Array of strings in the format `COLUMN_NAME:TYPE_NAME:DATA_TYPE`
-- **Use**: Understand column names and types before writing a query.
+The server exposes three core MCP tools through the [McpToolRegistrar](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/src/main/java/at/landvoigt/mcp/jdbc/McpToolRegistrar.java):
 
-### `execute_sql`
-- **Argument**: `query` (string, required) — a SQL `SELECT` or `WITH` statement
-- **Returns**: Array of row objects (each row is a map of column name → value)
-- **Security**: Only `SELECT` and `WITH` are accepted. `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE` and mid-query semicolons are blocked.
+### 1. `list_tables`
+- **Arguments**: None
+- **Returns**: Array of table name strings.
+- **Use Case**: Discover what database tables exist (e.g., `contacts`, `orders`, `products`).
 
-## Prerequisites
+### 2. `describe_table`
+- **Argument**: `tableName` (string, required) — exact table name.
+- **Returns**: Column schemas in the format `COLUMN_NAME:TYPE_NAME:DATA_TYPE`.
+- **Use Case**: Inspect columns, keys, and types of a table before formulating queries.
 
-- Java 21+
-- A JDBC-compatible database
-- (Optional) Docker and Docker Compose
+### 3. `execute_sql`
+- **Argument**: `query` (string, required) — a read-only SQL query (`SELECT` or `WITH` statement).
+- **Returns**: Array of rows (each row mapped as column name → value).
+- **Use Case**: Query data dynamically to answer specific business or analytical questions.
 
-## Configuration
+---
 
-The application is configured via environment variables:
+## ⚙️ Configuration
 
-| Variable | Description |
-| :--- | :--- |
-| `DB_KIND` | Database type (e.g., `postgresql`, `mysql`, `mssql`, `mariadb`, `oracle`) |
-| `DB_URL` | JDBC Connection URL (e.g., `jdbc:postgresql://localhost:5432/db`) |
-| `DB_USER` | Database username |
-| `DB_PASS` | Database password |
+The application is configured using environment variables (defined in [.env](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/.env) or system environment):
+
+| Variable | Required | Description | Default / Example |
+| :--- | :---: | :--- | :--- |
+| `DB_KIND` | **Yes** | Database type (e.g., `postgresql`, `mysql`, `mssql`, `mariadb`, `oracle`) | `postgresql` |
+| `DB_URL` | **Yes** | JDBC Connection URL | `jdbc:postgresql://localhost:5432/mydb` |
+| `DB_USER` | **Yes** | Database username | `admin` |
+| `DB_PASS` | **Yes** | Database password | `secret` |
 
 ### MCP Tool Customization (Optional)
 
-You can customize how the tools appear to the AI agent by setting these variables. **It is highly recommended to make these descriptions as exact as possible**, specifically describing the purpose and content of your database (e.g., "Access the CRM database containing customer contacts and sales history") to help the agent understand the available data.
+To maximize LLM capability, you can customize tool descriptions to tell the model exactly what information is in your specific database (e.g., *"Access the CRM database containing customer contacts"*).
 
 | Variable | Default Description |
 | :--- | :--- |
@@ -50,75 +51,92 @@ You can customize how the tools appear to the AI agent by setting these variable
 | `MCP_TOOL_DESCRIBE_TABLE_DESCRIPTION` | Get the schema/DDL for a specific database table... |
 | `MCP_TOOL_EXECUTE_SQL_DESCRIPTION` | Run a read-only SQL SELECT query... |
 
-## Getting Started
+---
 
-### 1. Development Mode
+## 🚀 Getting Started
 
-Run the application in development mode with live coding enabled:
+### Prerequisites
+- **Java 21+** installed
+- **Docker** and **Docker Compose** (optional, for containerized run)
 
+### Option A: Quick Start with Public RNA Database (No Setup Needed)
+The project comes pre-configured with a public read-only database of RNA sequences in [.env](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/.env).
+
+1. Copy the root `.env` configuration (if not already loaded):
+   ```bash
+   # Make sure DB configuration is read from .env
+   ./mvnw quarkus:dev
+   ```
+2. The server will start locally and connect to the public RNA database.
+
+### Option B: Local Development Mode
+Run the Quarkus development server with live-reloading:
 ```bash
 ./mvnw quarkus:dev
 ```
 
-### 2. Running with Docker Compose
-
-The easiest way to run the server is using the configuration in the `deployment/` folder:
-
+### Option C: Run using Docker Compose
+Deploy the server in containerized mode using the configuration in the [deployment/](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/deployment/) folder:
 ```bash
 cd deployment
-# Copy the example env file and edit it
 cp .env.example .env
-# Start the server
+# Edit the .env with your specific settings
 docker compose up -d
 ```
 
-### 3. Packaging & Running
+---
 
-Package the application as a runnable JAR:
+## 🔍 Security & SQL Validation
 
+To prevent malicious actions (like SQL injections, dropped tables, or data edits), all queries processed through the `execute_sql` tool are validated by [SqlValidator](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/src/main/java/at/landvoigt/mcp/jdbc/SqlValidator.java):
+
+1. **Structure Check**: The query must start with `SELECT` or `WITH`.
+2. **Stacked Queries Blocked**: Mid-query semicolons (`;`) are strictly forbidden to prevent stacked injections (e.g., `SELECT * FROM users; DROP TABLE users;`).
+3. **Comment/String Stripping**: Before keyword matching, strings and comments are removed to prevent false positives and bypasses.
+4. **Forbidden Keywords**: Queries containing keywords like `DROP`, `DELETE`, `UPDATE`, `ALTER`, `TRUNCATE`, `EXECUTE` are blocked.
+
+> [!WARNING]
+> While [SqlValidator](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/src/main/java/at/landvoigt/mcp/jdbc/SqlValidator.java) provides robust checks, you should **always** configure the database user (`DB_USER`) with read-only permissions at the database level.
+
+---
+
+## 🧪 Testing
+
+The project includes unit tests for SQL validation logic inside [SqlValidatorTest](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/src/test/java/at/landvoigt/mcp/jdbc/SqlValidatorTest.java).
+
+Run the tests using the Maven wrapper:
 ```bash
-./mvnw package
-java -jar target/quarkus-app/quarkus-run.jar
+./mvnw test
 ```
 
-## Connecting to the MCP Server
+---
 
-Once the server is running (default port `8080`), two transport endpoints are available:
+## 🔗 Connecting to the MCP Server
 
-| Endpoint | Transport | MCP Spec |
-| :--- | :--- | :--- |
-| `http://localhost:8080/mcp` | Streamable HTTP | 2025-03-26 (current) |
-| `http://localhost:8080/mcp/sse` | SSE | 2024-11-05 (legacy) |
+Once running (default port `8080`), two HTTP-based transports are exposed:
 
-Adjust `localhost:8080` to match the host and port where the server is deployed.
+| Endpoint | Transport Type | MCP Spec Version | Status |
+| :--- | :--- | :--- | :--- |
+| `http://localhost:8080/mcp` | Streamable HTTP | 2025-03-26 | **Recommended** |
+| `http://localhost:8080/mcp/sse` | SSE (Server-Sent Events) | 2024-11-05 | Legacy / Fallback |
 
-### Claude Desktop
-
-Add the following to your Claude Desktop configuration file:
+### Configuration for Claude Desktop
+Add the following snippet to your Claude Desktop config file:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
-    "jdbc": {
+    "generic-jdbc": {
       "url": "http://localhost:8080/mcp"
     }
   }
 }
 ```
 
-### Other MCP clients
-
-Use the streamable HTTP endpoint `/mcp` for clients that support the current MCP spec (Claude Desktop, Cursor, VS Code + Continue, etc.). Fall back to `/mcp/sse` for clients that only support the legacy SSE transport.
-
 ---
 
-## Documentation
-
-- [AGENTS.md](./AGENTS.md): Detailed information for AI agents on how to use the provided tools.
-- [DEPLOYMENT.md](./DEPLOYMENT.md): Comprehensive guide for different deployment scenarios.
-
-## License
-
-See the project's license for more details.
+## 📚 Project Documentation Links
+- [DEPLOYMENT.md](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/DEPLOYMENT.md) - Full guide on production deployment, Agroal connection pools, and container builds.
+- [AGENTS.md](file:///home/hadi/workspace/landvoigt-it-sources/mcp-server/mcp-server-generic-jdbc/AGENTS.md) - Instructions for AI agents utilizing the tools.
