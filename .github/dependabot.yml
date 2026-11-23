@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Vienna"
+    open-pull-requests-limit: 5
+    groups:
+      quarkus-platform:
+        patterns:
+          - "io.quarkus*"
+      maven-plugins:
+        patterns:
+          - "org.apache.maven.plugins:*"
+    labels:
+      - "dependencies"
+      - "java"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Vienna"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "ci"
